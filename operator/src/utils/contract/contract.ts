@@ -10,7 +10,7 @@ import { squareNumberDssAbi } from "./abis/squareNumberDSSAbi";
 
 // TODO change client based on env.NODE_ENV
 export const client = createTestClient({
-	account: privateKeyToAccount(env.PRIVATE_KEY as `0x${string}`),
+	account: privateKeyToAccount('0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d'),
 	chain: foundry,
 	mode: "anvil",
 	transport: http(env.RPC_URL),

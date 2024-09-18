@@ -9,7 +9,7 @@ import { Task, TaskResponseSchema, TaskRequest } from "@/api/models/Task";
 
 export const taskPath = "/task";
 export const taskRegistry = new OpenAPIRegistry();
-export const taskRouter: Router = express.Router();
+export const taskRouter: Router = Router();
 
 taskRegistry.registerPath({
 	method: "post",

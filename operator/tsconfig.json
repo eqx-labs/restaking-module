@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
+    "module": "ESNext",  // or 'nodenext' or 'preserve'
     "target": "ESNext",
-    "module": "CommonJS",
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"]
