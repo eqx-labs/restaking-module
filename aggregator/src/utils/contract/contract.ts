@@ -7,6 +7,7 @@ import { env } from "@/config";
 
 import { coreAbi } from "./abis/coreAbi";
 import { squareNumberDssAbi } from "./abis/squareNumberDSSAbi";
+import {verifyDssAbi} from "./abis/verifyDssAbi";
 
 // TODO change client based on env.NODE_ENV
 export const client = createTestClient({
@@ -19,11 +20,18 @@ export const client = createTestClient({
 	.extend(walletActions);
 
 export const dssContractAddress = dssAddress;
+export const verifyAddress = dssAddress;
 
 export const dssContract = getContract({
 	address: dssAddress as Address,
 	abi: squareNumberDssAbi,
 	client: client,
+});
+
+export const verifyContract=getContract({
+	address:verifyAddress as Address,
+	abi:verifyDssAbi,
+	client:client
 });
 
 export const coreContract = getContract({

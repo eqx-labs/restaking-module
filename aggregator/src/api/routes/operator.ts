@@ -39,11 +39,18 @@ operatorRegistry.registerPath({
 	responses: createApiResponse(OperatorSchema, "Success"),
 });
 
+
 operatorRouter.get("/", async (req: Request, res: Response) => {
-	try {
-		const isRegistered = isOperatorRegistered(req.query.address);
-		handleServiceResponse(ServiceResponse.success(`Operator ${req.query.address} is registered: ${isRegistered}`, isRegistered), res);
-	} catch (error) {
-		handleServiceResponse(ServiceResponse.failure(`router :: GET :: /operator :: failed with error ${error}`, null), res);
-	}
+    try {
+        // Check if address is provided and is a string
+        const address = req.query.address;
+        if (typeof address !== 'string') {
+            return handleServiceResponse(ServiceResponse.failure("Address must be a string", null), res);
+        }
+
+        const isRegistered = isOperatorRegistered(address);
+        handleServiceResponse(ServiceResponse.success(`Operator ${address} is registered: ${isRegistered}`, isRegistered), res);
+    } catch (error) {
+        handleServiceResponse(ServiceResponse.failure(`router :: GET :: /operator :: failed with error ${error}`, null), res);
+    }
 });
