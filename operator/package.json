@@ -5,6 +5,7 @@
   "license": "MIT",
   "main": "index.ts",
   "scripts": {
+    "start:anvil": "anvil",
     "dev": "tsx watch --clear-screen=false src/index.ts | pino-pretty",
     "build": "tsup",
     "start": "node dist/index.js",
@@ -30,7 +31,8 @@
     "pino-http": "^10.0.0",
     "swagger-ui-express": "^5.0.0",
     "viem": "^2.21.9",
-    "zod": "^3.22.4"
+    "zod": "^3.22.4",
+    "forge-std": "^1.0.0" 
   },
   "devDependencies": {
     "@biomejs/biome": "1.8.3",
