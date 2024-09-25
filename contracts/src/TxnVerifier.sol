@@ -9,6 +9,7 @@ contract TxnVerifier is IDSS {
     // Event to emit the verification result
     event TxnVerificationResult(bytes32 txnHash, uint256 blockNumber);
     event Received(bool msgFromContract, uint256 proposer);
+    event IsValidAndProposer(bool isValid, uint256 proposer);
 
     // Store verified transactions
     mapping(bytes32 => uint256) public verifiedTxns;
@@ -16,6 +17,10 @@ contract TxnVerifier is IDSS {
     // Aggregator address
     address public aggregator;
     ICore core;
+
+    // State variables to store txnValid and proposer
+    bool private txnValid;
+    uint256 private proposer;
 
     /* ======= Modifiers ======= */
     modifier onlyAggregator() {
@@ -34,7 +39,7 @@ contract TxnVerifier is IDSS {
     function verifyTransaction(
         bytes32 txnHash,
         uint256 blockNumber
-    ) public  {
+    ) public {
         // Simulate verification logic here (placeholder)
         verifiedTxns[txnHash] = blockNumber;
 
@@ -44,11 +49,24 @@ contract TxnVerifier is IDSS {
 
     // Function to validate proposer transaction
     function validateProposerTransaction(
-        uint256 proposer,
-        bool txnValid
+        uint256 _proposer,
+        bool _txnValid
     ) external {
         // Emit the result
-        emit Received(txnValid, proposer);
+        emit Received(_txnValid, _proposer);
+        
+        // Store the values in state variables
+        txnValid = _txnValid;
+        proposer = _proposer;
+
+        // Emit the new event with the stored values
+        emit IsValidAndProposer(txnValid, proposer);
+    }
+
+    // New function to emit stored isValid and proposer
+    function emitStoredIsValidAndProposer() external {
+        // Emit the stored values
+        emit IsValidAndProposer(txnValid, proposer);
     }
 
     /* ======= IDSS Interface Functions ======= */
@@ -60,7 +78,7 @@ contract TxnVerifier is IDSS {
             interfaceID == IDSS.unregistrationHook.selector);
     }
 
-  function registerToCore(uint256 slashablePercentage) external {
+    function registerToCore(uint256 slashablePercentage) external {
         core.registerDSS(slashablePercentage);
     }
 
@@ -99,5 +117,3 @@ contract TxnVerifier is IDSS {
 
     function finishSlashingHook(address operator) external override {}
 }
-
-// 6d35c1bdf469031cfe3cbaddd57ca69a36835a39c2a6f2cefc17c804851b0635
