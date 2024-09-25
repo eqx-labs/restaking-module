@@ -15,6 +15,7 @@ contract TxnVerifier is IDSS {
 
     // Aggregator address
     address public aggregator;
+    ICore core;
 
     /* ======= Modifiers ======= */
     modifier onlyAggregator() {
@@ -22,8 +23,9 @@ contract TxnVerifier is IDSS {
         _;
     }
 
-    constructor(address _aggregator) {
+    constructor(address _aggregator, ICore _core) {
         aggregator = _aggregator;
+        core = _core;
     }
 
     /* ======= External Functions ======= */
@@ -32,7 +34,7 @@ contract TxnVerifier is IDSS {
     function verifyTransaction(
         bytes32 txnHash,
         uint256 blockNumber
-    ) external onlyAggregator {
+    ) public  {
         // Simulate verification logic here (placeholder)
         verifiedTxns[txnHash] = blockNumber;
 
@@ -56,6 +58,10 @@ contract TxnVerifier is IDSS {
     ) external pure returns (bool) {
         return (interfaceID == IDSS.registrationHook.selector ||
             interfaceID == IDSS.unregistrationHook.selector);
+    }
+
+  function registerToCore(uint256 slashablePercentage) external {
+        core.registerDSS(slashablePercentage);
     }
 
     function registrationHook(

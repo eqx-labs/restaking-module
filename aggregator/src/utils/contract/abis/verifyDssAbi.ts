@@ -1,284 +1,143 @@
 export const verifyDssAbi = [
-    {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "_aggregator",
-                "type": "address"
-            }
-        ],
-        "stateMutability": "nonpayable",
-        "type": "constructor"
-    },
-    {
-        "anonymous": false,
-        "inputs": [
-            {
-                "indexed": false,
-                "internalType": "bool",
-                "name": "msgFromContract",
-                "type": "bool"
-            },
-            {
-                "indexed": false,
-                "internalType": "uint256",
-                "name": "proposer",
-                "type": "uint256"
-            }
-        ],
-        "name": "Received",
-        "type": "event"
-    },
-    {
-        "anonymous": false,
-        "inputs": [
-            {
-                "indexed": false,
-                "internalType": "bytes32",
-                "name": "txnHash",
-                "type": "bytes32"
-            },
-            {
-                "indexed": false,
-                "internalType": "uint256",
-                "name": "blockNumber",
-                "type": "uint256"
-            }
-        ],
-        "name": "TxnVerificationResult",
-        "type": "event"
-    },
-    {
-        "inputs": [],
-        "name": "aggregator",
-        "outputs": [
-            {
-                "internalType": "address",
-                "name": "",
-                "type": "address"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "operator",
-                "type": "address"
-            }
-        ],
-        "name": "cancelSlashingHook",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "operator",
-                "type": "address"
-            },
-            {
-                "internalType": "address",
-                "name": "vault",
-                "type": "address"
-            }
-        ],
-        "name": "cancelUpdateStakeHook",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "operator",
-                "type": "address"
-            }
-        ],
-        "name": "finishSlashingHook",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "operator",
-                "type": "address"
-            }
-        ],
-        "name": "finishUpdateStakeHook",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "operator",
-                "type": "address"
-            },
-            {
-                "internalType": "bytes",
-                "name": "extraData",
-                "type": "bytes"
-            }
-        ],
-        "name": "registrationHook",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "operator",
-                "type": "address"
-            },
-            {
-                "internalType": "uint256[]",
-                "name": "slashingPercentagesWad",
-                "type": "uint256[]"
-            }
-        ],
-        "name": "requestSlashingHook",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "operator",
-                "type": "address"
-            },
-            {
-                "components": [
-                    {
-                        "internalType": "address",
-                        "name": "vault",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "contract IDSS",
-                        "name": "dss",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "bool",
-                        "name": "toStake",
-                        "type": "bool"
-                    }
-                ],
-                "internalType": "struct Operator.StakeUpdateRequest",
-                "name": "newStake",
-                "type": "tuple"
-            }
-        ],
-        "name": "requestUpdateStakeHook",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "bytes4",
-                "name": "interfaceID",
-                "type": "bytes4"
-            }
-        ],
-        "name": "supportsInterface",
-        "outputs": [
-            {
-                "internalType": "bool",
-                "name": "",
-                "type": "bool"
-            }
-        ],
-        "stateMutability": "pure",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "operator",
-                "type": "address"
-            },
-            {
-                "internalType": "bytes",
-                "name": "extraData",
-                "type": "bytes"
-            }
-        ],
-        "name": "unregistrationHook",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "uint256",
-                "name": "proposer",
-                "type": "uint256"
-            },
-            {
-                "internalType": "bool",
-                "name": "txnValid",
-                "type": "bool"
-            }
-        ],
-        "name": "validateProposerTransaction",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "bytes32",
-                "name": "",
-                "type": "bytes32"
-            }
-        ],
-        "name": "verifiedTxns",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "bytes32",
-                "name": "txnHash",
-                "type": "bytes32"
-            },
-            {
-                "internalType": "uint256",
-                "name": "blockNumber",
-                "type": "uint256"
-            }
-        ],
-        "name": "verifyTransaction",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    }
-];
+	{
+	  type: 'constructor',
+	  inputs: [
+		{ name: '_aggregator', type: 'address', internalType: 'address' },
+		{ name: '_core', type: 'address', internalType: 'contract ICore' },
+	  ],
+	  stateMutability: 'nonpayable',
+	},
+	{
+	  type: 'event',
+	  name: 'Received',
+	  inputs: [
+		{ name: 'msgFromContract', type: 'bool', internalType: 'bool', indexed: false },
+		{ name: 'proposer', type: 'uint256', internalType: 'uint256', indexed: false },
+	  ],
+	  anonymous: false,
+	},
+	{
+	  type: 'event',
+	  name: 'TxnVerificationResult',
+	  inputs: [
+		{ name: 'txnHash', type: 'bytes32', internalType: 'bytes32', indexed: false },
+		{ name: 'blockNumber', type: 'uint256', internalType: 'uint256', indexed: false },
+	  ],
+	  anonymous: false,
+	},
+	{
+	  type: 'function',
+	  name: 'aggregator',
+	  inputs: [],
+	  outputs: [{ name: '', type: 'address', internalType: 'address' }],
+	  stateMutability: 'view',
+	},
+	{
+	  type: 'function',
+	  name: 'cancelSlashingHook',
+	  inputs: [{ name: 'operator', type: 'address', internalType: 'address' }],
+	  outputs: [],
+	  stateMutability: 'nonpayable',
+	},
+	{
+	  type: 'function',
+	  name: 'cancelUpdateStakeHook',
+	  inputs: [
+		{ name: 'operator', type: 'address', internalType: 'address' },
+		{ name: 'vault', type: 'address', internalType: 'address' },
+	  ],
+	  outputs: [],
+	  stateMutability: 'nonpayable',
+	},
+	{
+	  type: 'function',
+	  name: 'finishSlashingHook',
+	  inputs: [{ name: 'operator', type: 'address', internalType: 'address' }],
+	  outputs: [],
+	  stateMutability: 'nonpayable',
+	},
+	{
+	  type: 'function',
+	  name: 'finishUpdateStakeHook',
+	  inputs: [{ name: 'operator', type: 'address', internalType: 'address' }],
+	  outputs: [],
+	  stateMutability: 'nonpayable',
+	},
+	{
+	  type: 'function',
+	  name: 'registerToCore',
+	  inputs: [{ name: 'slashablePercentage', type: 'uint256', internalType: 'uint256' }],
+	  outputs: [],
+	  stateMutability: 'nonpayable',
+	},
+	{
+	  type: 'function',
+	  name: 'registrationHook',
+	  inputs: [
+		{ name: 'operator', type: 'address', internalType: 'address' },
+		{ name: 'extraData', type: 'bytes', internalType: 'bytes' },
+	  ],
+	  outputs: [],
+	  stateMutability: 'nonpayable',
+	},
+	{
+	  type: 'function',
+	  name: 'requestSlashingHook',
+	  inputs: [
+		{ name: 'operator', type: 'address', internalType: 'address' },
+		{ name: 'slashingPercentagesWad', type: 'uint256[]', internalType: 'uint256[]' },
+	  ],
+	  outputs: [],
+	  stateMutability: 'nonpayable',
+	},
+	{
+	  type: 'function',
+	  name: 'requestUpdateStakeHook',
+	  inputs: [
+		{ name: 'operator', type: 'address', internalType: 'address' },
+		{
+		  name: 'newStake',
+		  type: 'tuple',
+		  internalType: 'struct Operator.StakeUpdateRequest',
+		  components: [
+			{ name: 'vault', type: 'address', internalType: 'address' },
+			{ name: 'dss', type: 'address', internalType: 'contract IDSS' },
+			{ name: 'toStake', type: 'bool', internalType: 'bool' },
+		  ],
+		},
+	  ],
+	  outputs: [],
+	  stateMutability: 'nonpayable',
+	},
+	{
+	  type: 'error',
+	  name: 'NotAggregator',
+	  inputs: [],
+	},
+	{
+	  type: 'error',
+	  name: 'OperatorAlreadyRegistered',
+	  inputs: [],
+	},
+	{
+	  type: 'error',
+	  name: 'OperatorAndIndexDontMatch',
+	  inputs: [],
+	},
+	{
+	  type: 'error',
+	  name: 'OperatorIsNotRegistered',
+	  inputs: [],
+	},
+	{
+	  type: 'error',
+	  name: 'SenderNotOperator',
+	  inputs: [],
+	},
+	{
+	  type: 'error',
+	  name: 'TaskAlreadyExists',
+	  inputs: [],
+	},
+  ];
+  

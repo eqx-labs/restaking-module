@@ -6,6 +6,8 @@ import {ERC1967Factory} from "solady/src/utils/ERC1967Factory.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {SquareNumberDSS} from "../src/SquareNumberDSS.sol";
+import {TxnVerifier} from "../src/TxnVerifier.sol"; // Correct
+
 
 import {Core} from "../src/karak/src/Core.sol";
 import {Vault} from "../src/karak/src/Vault.sol";
@@ -17,27 +19,43 @@ import {SlashingHandler} from "../src/karak/src/SlashingHandler.sol";
 import {ERC20Mintable} from "../src/karak/test/helpers/contracts/ERC20Mintable.sol";
 
 contract DeployDSSAndLocal is Script {
-    address internal constant CORE_PROXY_ADMIN = 0x70997970C51812dc3A010C7d01b50e0d17dc79C8;
-    address internal constant CORE_MANAGER = 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266;
-    address internal constant CORE_VETO_COMMITTEE = 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266;
-    address internal constant SLASHING_HANDLER_PROXY_ADMIN = 0x70997970C51812dc3A010C7d01b50e0d17dc79C8;
-    address internal constant OPERATOR = 0x14dC79964da2C08b23698B3D3cc7Ca32193d9955;
-    address internal constant AGGREGATOR = 0x70997970C51812dc3A010C7d01b50e0d17dc79C8;
+    address internal constant CORE_PROXY_ADMIN =
+        0x70997970C51812dc3A010C7d01b50e0d17dc79C8;
+    address internal constant CORE_MANAGER =
+        0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266;
+    address internal constant CORE_VETO_COMMITTEE =
+        0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266;
+    address internal constant SLASHING_HANDLER_PROXY_ADMIN =
+        0x70997970C51812dc3A010C7d01b50e0d17dc79C8;
+    address internal constant OPERATOR =
+        0x14dC79964da2C08b23698B3D3cc7Ca32193d9955;
+    address internal constant AGGREGATOR =
+        0x70997970C51812dc3A010C7d01b50e0d17dc79C8;
 
     function run() public {
         vm.startBroadcast();
         console2.log("Running DeployCoreLocal script. Signer:", msg.sender);
         console2.log();
 
-        (address coreImpl, address vaultImpl, address slashingHandlerImpl) = deployImpls();
+        (
+            address coreImpl,
+            address vaultImpl,
+            address slashingHandlerImpl
+        ) = deployImpls();
         console2.log("Deployed Core(impl):", coreImpl);
         console2.log("Deployed Vault(impl):", vaultImpl);
         console2.log("Deployed SlashingHandler(impl):", slashingHandlerImpl);
         console2.log();
 
-        (Core coreProxy, SlashingHandler slashingHandlerProxy) = deployProxies(coreImpl, slashingHandlerImpl);
+        (Core coreProxy, SlashingHandler slashingHandlerProxy) = deployProxies(
+            coreImpl,
+            slashingHandlerImpl
+        );
         console2.log("Deployed Core(proxy):", address(coreProxy));
-        console2.log("Deployed SlashingHandler(proxy):", address(slashingHandlerProxy));
+        console2.log(
+            "Deployed SlashingHandler(proxy):",
+            address(slashingHandlerProxy)
+        );
         console2.log();
 
         initializeCore(coreProxy, vaultImpl);
@@ -51,7 +69,12 @@ contract DeployDSSAndLocal is Script {
 
         testERC20.mint(msg.sender, 1e6 * 1e6);
         console2.log("Deployed TEST ERC20:", address(testERC20));
-        console2.log("Minted ", testERC20.balanceOf(msg.sender), " TEST ERC20 to ", msg.sender);
+        console2.log(
+            "Minted ",
+            testERC20.balanceOf(msg.sender),
+            " TEST ERC20 to ",
+            msg.sender
+        );
         console2.log();
 
         IERC20[] memory tokens = new IERC20[](1);
@@ -65,15 +88,31 @@ contract DeployDSSAndLocal is Script {
         }
         console2.log();
 
-        address operatorERC20Vault =
-            setupOperator(address(coreProxy), address(testERC20), address(slashingHandlerProxy), address(vaultImpl));
-        console2.log("address of deployed operator contract for ", OPERATOR, " : ", operatorERC20Vault);
+        address operatorERC20Vault = setupOperator(
+            address(coreProxy),
+            address(testERC20),
+            address(slashingHandlerProxy),
+            address(vaultImpl)
+        );
+        console2.log(
+            "Address of deployed operator contract for ",
+            OPERATOR,
+            " : ",
+            operatorERC20Vault
+        );
         console2.log();
 
         SquareNumberDSS dss = deployDSS(address(coreProxy));
-        console2.log("address of DSS: ", address(dss));
+        console2.log("Address of DSS: ", address(dss));
 
-        operatorRegistrationInCore(address(coreProxy), operatorERC20Vault, dss, testERC20);
+        TxnVerifier dssd = deployTxnVerifier(address(coreProxy)); // Updated reference to TxnVerifier.sol
+        console2.log("Address of TxnVerifier (DSSD): ", address(dssd)); // Updated log reference
+        operatorRegistrationInCore(
+            address(coreProxy),
+            operatorERC20Vault,
+            dss,
+            testERC20
+        );
         updateStakeInDSS(coreProxy, operatorERC20Vault, dss);
         vm.stopBroadcast();
 
@@ -89,23 +128,39 @@ contract DeployDSSAndLocal is Script {
         vm.writeFile("./contract-addresses.json", contractAddressesJson);
     }
 
-    function deployImpls() public returns (address coreImpl, address vaultImpl, address slashingHandlerImpl) {
+    function deployImpls()
+        public
+        returns (
+            address coreImpl,
+            address vaultImpl,
+            address slashingHandlerImpl
+        )
+    {
         coreImpl = address(new Core());
         vaultImpl = address(new Vault());
         slashingHandlerImpl = address(new SlashingHandler());
     }
 
-    function deployProxies(address coreImpl, address slashingHandlerImpl)
-        public
-        returns (Core coreProxy, SlashingHandler slashingHandlerProxy)
-    {
+    function deployProxies(
+        address coreImpl,
+        address slashingHandlerImpl
+    ) public returns (Core coreProxy, SlashingHandler slashingHandlerProxy) {
         ERC1967Factory factory = new ERC1967Factory();
         coreProxy = Core(factory.deploy(coreImpl, CORE_PROXY_ADMIN));
-        slashingHandlerProxy = SlashingHandler(factory.deploy(slashingHandlerImpl, SLASHING_HANDLER_PROXY_ADMIN));
+        slashingHandlerProxy = SlashingHandler(
+            factory.deploy(slashingHandlerImpl, SLASHING_HANDLER_PROXY_ADMIN)
+        );
     }
 
     function initializeCore(Core core, address vaultImpl) public {
-        core.initialize(vaultImpl, CORE_MANAGER, CORE_VETO_COMMITTEE, 100000, 100000, 10000);
+        core.initialize(
+            vaultImpl,
+            CORE_MANAGER,
+            CORE_VETO_COMMITTEE,
+            100000,
+            100000,
+            10000
+        );
     }
 
     function deployTestERC20() public returns (ERC20Mintable testERC20) {
@@ -113,14 +168,19 @@ contract DeployDSSAndLocal is Script {
         testERC20.initialize("Test", "TEST", 6);
     }
 
-    function initializeSlashingHandler(SlashingHandler slashingHandler, IERC20[] memory tokens) public {
+    function initializeSlashingHandler(
+        SlashingHandler slashingHandler,
+        IERC20[] memory tokens
+    ) public {
         slashingHandler.initialize(msg.sender, tokens);
     }
 
-    function setupOperator(address coreProxy, address erc20Token, address slashingHandler, address vaultImpl)
-        public
-        returns (address vaultAddress)
-    {
+    function setupOperator(
+        address coreProxy,
+        address erc20Token,
+        address slashingHandler,
+        address vaultImpl
+    ) public returns (address vaultAddress) {
         address[] memory assets = new address[](1);
         assets[0] = erc20Token;
         address[] memory slashingHandlers = new address[](1);
@@ -137,7 +197,16 @@ contract DeployDSSAndLocal is Script {
             symbol: "TEST",
             extraData: abi.encode("")
         });
-        vaultAddress = address(Core(coreProxy).deployVaults(configs, vaultImpl)[0]);
+        vaultAddress = address(
+            Core(coreProxy).deployVaults(configs, vaultImpl)[0]
+        );
+    }
+
+    function deployTxnVerifier(address core) public returns (TxnVerifier dssd) {
+        // Updated function name and type
+        dssd = new TxnVerifier(AGGREGATOR, ICore(core));
+        dssd.registerToCore(1);
+
     }
 
     function deployDSS(address core) public returns (SquareNumberDSS dss) {
@@ -156,10 +225,17 @@ contract DeployDSSAndLocal is Script {
         Core(core).registerOperatorToDSS(IDSS(address(dss)), abi.encode(""));
     }
 
-    function updateStakeInDSS(Core core, address vaultAddress, SquareNumberDSS dss) public {
+    function updateStakeInDSS(
+        Core core,
+        address vaultAddress,
+        SquareNumberDSS dss
+    ) public {
         core.requestUpdateVaultStakeInDSS(
-            Operator.StakeUpdateRequest({vault: vaultAddress, dss: IDSS(address(dss)), toStake: true})
+            Operator.StakeUpdateRequest({
+                vault: vaultAddress,
+                dss: IDSS(address(dss)),
+                toStake: true
+            })
         );
-        // core.finalizeUpdateVaultStakeInDSS(updatedStake, OPERATOR);
     }
 }
