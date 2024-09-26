@@ -6,13 +6,31 @@ import {ICore} from "./karak/src/interfaces/ICore.sol";
 import {Operator} from "./karak/src/entities/Operator.sol";
 
 contract TxnVerifier is IDSS {
+    struct CompletedTask {
+    string transactionStatus; // Represents the status of the transaction
+    string proposal;          // Represents the proposer index
+}
+
+struct TaskRequest {
+    bytes32 txnHash;
+     uint256 blockNumber;
+}
+// Define the main response interface
+struct TaskResponse {
+    CompletedTask completedTask; // Include the completedTask object
+    string publicKey;            // The public key of the operator
+    string signature;            // The signature of the operator
+}
     // Event to emit the verification result
     event TxnVerificationResult(bytes32 txnHash, uint256 blockNumber);
     event Received(bool msgFromContract, uint256 proposer);
     event IsValidAndProposer(bool isValid, uint256 proposer);
+     event TaskResponseSubmitted(TaskResponse taskResponse);
 
     // Store verified transactions
-    mapping(bytes32 => uint256) public verifiedTxns;
+      mapping(bytes32 => uint256) public verifiedTxns;
+       mapping(bytes32 taskRequestHash => TaskResponse taskResponse) taskResponses;
+       mapping(bytes32 taskRequestHash => bool completed) taskCompleted;
       mapping(address operatorAddress => bool exists) operatorExists;
 
     // Aggregator address
@@ -84,6 +102,15 @@ contract TxnVerifier is IDSS {
         return operatorExists[operator];
     }
 
+  function submitTaskResponse(TaskRequest calldata taskRequest, TaskResponse calldata taskResponse)
+        external
+        onlyAggregator
+    {
+        bytes32 taskReqeustHash = keccak256(abi.encode(taskRequest));
+        taskCompleted[taskReqeustHash] = true;
+        taskResponses[taskReqeustHash] = taskResponse;
+        emit TaskResponseSubmitted(taskResponse);
+    }
 
 
     function supportsInterface(

@@ -64,9 +64,10 @@ async function watchForTransactionVerifications() {
 				console.log("respnse coming",responses);
 				const blockNumber = taskRequest.blockNumber!;
 				const taskResponse = { response: responses };
+				console.log("taskRequest working dine ",taskResponse.response[0].completedTask)
 
 
-				await verifyContract.write.submitTaskResponse([taskRequest.task, taskResponse]);
+				await verifyContract.write.submitTaskResponse([taskRequest.task, taskResponse.response[0]]);
 				await writeBlockNumberToFile(env.CONTRACTS_JSON, blockNumber + 1);
 
 				logger.info(`Task response for block ${blockNumber} submitted successfully.`);
@@ -142,7 +143,7 @@ async function sendTaskToAllOperators(task: Task): Promise<number> {
 }
 
 
-async function sendTaskVerifyToAllOperators(task: Task): Promise<string> {
+async function sendTaskVerifyToAllOperators(task: Task): Promise<TaskResponse[]> {
 	let operatorResponses: TaskResponse[] = await Promise.all(
 	  registeredOperators.map(async (operator) => {
 		try {
@@ -194,41 +195,43 @@ async function sendTaskVerifyToAllOperators(task: Task): Promise<string> {
 
 
 	console.log("operatorResponses",operatorResponses);
-    // Aggregate responses by operator stakes
-	for (const operator of operatorResponses) {
-		console.log("operator", operator);
-		
-		// Assuming completedTask has a transactionStatus or another property to be used as the key
-		const operatorResponseKey = operator.completedTask; // Change this based on your structure
-		const existingStake = responseMap.get(operatorResponseKey.response) || 0n; // Use the correct key
-		const stakeAmount = operatorStakes.get(operator.publicKey!) || 0n; // Get the stake amount
-		
-		// Update the responseMap
-		responseMap.set(operatorResponseKey, existingStake + stakeAmount);
-	}
-    // Log the response map before aggregation
-    console.log("Response map before aggregation:", Array.from(responseMap.entries()));
-
-    // Determine the most frequent response by stake
-    const entries = [...responseMap.entries()];
-
-    // Check if entries array is empty
-    if (entries.length === 0) {
-        throw new Error("No valid responses to aggregate");
-    }
-
-    // Use reduce with an initial value
-    const mostFrequentResponse = entries.reduce(
-        (a, b) => (b[1] > a[1] ? b : a),
-        [0, 0n] // Initial value: [key, BigInt(0)]
-    );
-
-    console.log("mostFrequentResponse", mostFrequentResponse);
-
-    // Check if the majority stake is reached
-    if (mostFrequentResponse[1] < totalStake / 2n) {
-        throw new Error("Majority not reached");
-    }
-
-    return mostFrequentResponse[0].toString();
+	return operatorResponses;
 }
+    // Aggregate responses by operator stakes
+	// for (const operator of operatorResponses) {
+	// 	console.log("operator", operator);
+		
+	// 	// Assuming completedTask has a transactionStatus or another property to be used as the key
+	// 	const operatorResponseKey = operator.completedTask; // Change this based on your structure
+	// 	const existingStake = responseMap.get(operatorResponseKey.response) || 0n; // Use the correct key
+	// 	const stakeAmount = operatorStakes.get(operator.publicKey!) || 0n; // Get the stake amount
+		
+	// 	// Update the responseMap
+	// 	responseMap.set(operatorResponseKey, existingStake + stakeAmount);
+	// }
+    // // Log the response map before aggregation
+    // console.log("Response map before aggregation:", Array.from(responseMap.entries()));
+
+    // // Determine the most frequent response by stake
+    // const entries = [...responseMap.entries()];
+
+    // // Check if entries array is empty
+    // if (entries.length === 0) {
+    //     throw new Error("No valid responses to aggregate");
+    // }
+
+    // // Use reduce with an initial value
+    // const mostFrequentResponse = entries.reduce(
+    //     (a, b) => (b[1] > a[1] ? b : a),
+    //     [0, 0n] // Initial value: [key, BigInt(0)]
+    // );
+
+    // console.log("mostFrequentResponse", mostFrequentResponse);
+
+    // // Check if the majority stake is reached
+    // if (mostFrequentResponse[1] < totalStake / 2n) {
+    //     throw new Error("Majority not reached");
+    // }
+
+    // return mostFrequentResponse[0].toString();
+// }

@@ -58,6 +58,48 @@ export const verifyDssAbi = [
 		"anonymous": false,
 		"inputs": [
 			{
+				"components": [
+					{
+						"components": [
+							{
+								"internalType": "string",
+								"name": "transactionStatus",
+								"type": "string"
+							},
+							{
+								"internalType": "string",
+								"name": "proposal",
+								"type": "string"
+							}
+						],
+						"internalType": "struct TxnVerifier.CompletedTask",
+						"name": "completedTask",
+						"type": "tuple"
+					},
+					{
+						"internalType": "string",
+						"name": "publicKey",
+						"type": "string"
+					},
+					{
+						"internalType": "string",
+						"name": "signature",
+						"type": "string"
+					}
+				],
+				"indexed": false,
+				"internalType": "struct TxnVerifier.TaskResponse",
+				"name": "taskResponse",
+				"type": "tuple"
+			}
+		],
+		"name": "TaskResponseSubmitted",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
 				"indexed": false,
 				"internalType": "bytes32",
 				"name": "txnHash",
@@ -268,6 +310,65 @@ export const verifyDssAbi = [
 			}
 		],
 		"name": "requestUpdateStakeHook",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"components": [
+					{
+						"internalType": "bytes32",
+						"name": "txnHash",
+						"type": "bytes32"
+					},
+					{
+						"internalType": "uint256",
+						"name": "blockNumber",
+						"type": "uint256"
+					}
+				],
+				"internalType": "struct TxnVerifier.TaskRequest",
+				"name": "taskRequest",
+				"type": "tuple"
+			},
+			{
+				"components": [
+					{
+						"components": [
+							{
+								"internalType": "string",
+								"name": "transactionStatus",
+								"type": "string"
+							},
+							{
+								"internalType": "string",
+								"name": "proposal",
+								"type": "string"
+							}
+						],
+						"internalType": "struct TxnVerifier.CompletedTask",
+						"name": "completedTask",
+						"type": "tuple"
+					},
+					{
+						"internalType": "string",
+						"name": "publicKey",
+						"type": "string"
+					},
+					{
+						"internalType": "string",
+						"name": "signature",
+						"type": "string"
+					}
+				],
+				"internalType": "struct TxnVerifier.TaskResponse",
+				"name": "taskResponse",
+				"type": "tuple"
+			}
+		],
+		"name": "submitTaskResponse",
 		"outputs": [],
 		"stateMutability": "nonpayable",
 		"type": "function"
