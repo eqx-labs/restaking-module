@@ -61,10 +61,10 @@ async function watchForTransactionVerifications() {
 		if (registeredOperators.length > 0) {
 			for (const taskRequest of taskRequests) {
 				const responses = await sendTaskVerifyToAllOperators(taskRequest.task);
-				console.log("respnse coming",responses);
+				console.log("response coming",responses);
 				const blockNumber = taskRequest.blockNumber!;
 				const taskResponse = { response: responses };
-				console.log("taskRequest working dine ",taskResponse.response[0].completedTask)
+				console.log("taskRequest working fine ",taskResponse.response[0].completedTask)
 
 
 				await verifyContract.write.submitTaskResponse([taskRequest.task, taskResponse.response[0]]);
