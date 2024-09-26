@@ -141,73 +141,6 @@ async function sendTaskToAllOperators(task: Task): Promise<number> {
 	return mostFrequentResponse[0];
 }
 
-// async function sendTaskVerifyToAllOperators(task: any): Promise<number> {
-// 	let operatorResponses: VerifyResponse[] = await Promise.all(
-// 		registeredOperators.map(async (operator) => {
-// 			try {
-// 				const response = await fetch(`${operator.url}/verify`, {
-// 					method: "POST",
-// 					body: JSON.stringify(task),
-// 					headers: { "Content-Type": "application/json" },
-// 				});
-// 				const responseJson = await response.json();
-// 				console.log("responseJson",responseJson);
-// 				const serviceResponse: any = (responseJson as ServiceResponse<VerifyResponse>).responseObject;
-
-// 				console.log("ServiceRes,",serviceResponse);
-// 				return serviceResponse;
-// 				// return {
-// 				// 	completedTask: serviceResponse.completedTask,
-// 				// 	publicKey: serviceResponse.publicKey,
-// 				// 	signature: serviceResponse.signature,
-// 				// } as TaskResponse;
-// 			} catch (e) {
-// 				logger.error(`Error in sendTaskVerifyToAllOperators: ${e}`);
-// 				return undefined as unknown as VerifyResponse;
-// 			}
-// 		})
-// 	);
-
-// 	const validResponses = operatorResponses.filter((response): response is VerifyResponse => response !== undefined);
-
-//   // Verify operator responses asynchronously
-//   const verifiedResponses = await Promise.all(
-//     validResponses.map(async (response) => {
-//           console.log("single res",response);
-//       const isVerified = await verifyMessage({
-//         address: response.publicKey,
-//         message: JSON.stringify(response.completedTask),
-//         signature: response.signature,
-//       });
-//       return isVerified ? response : undefined; // Filter out non-verified responses
-//     })
-//   );
-
-//   // Filter out non-verified responses
-//   const filteredVerifiedResponses = verifiedResponses.filter((response): response is VerifyResponse => response !== undefined);
-
-//   // Map to aggregate operator responses by transaction status
-//   const responseMap: Map<string, number> = new Map();
-
-//   // Aggregate responses by transaction status
-// //   for (const operator of filteredVerifiedResponses) {
-// //     const transactionStatus = operator.completedTask.transactionStatus; // Assuming you want to aggregate by transaction status
-// //     const existingCount = responseMap.get(transactionStatus) || 0;
-// //     responseMap.set(transactionStatus, existingCount + 1);
-// //   }
-
-//   // Determine the most frequent response by count
-//   const mostFrequentResponse = [...responseMap.entries()].reduce((a, b) => (b[1] > a[1] ? b : a));
-
-//   // Check if the majority stake is reached, if needed
-//   const totalResponses = filteredVerifiedResponses.length;
-//   if (mostFrequentResponse[1] < totalResponses / 2) {
-//     throw new Error("Majority not reached");
-//   }
-
-// //   console.log("Most Frequent Response:", mostFrequentResponse);
-//   return 0;
-// }
 
 async function sendTaskVerifyToAllOperators(task: Task): Promise<string> {
 	let operatorResponses: TaskResponse[] = await Promise.all(
@@ -222,8 +155,8 @@ async function sendTaskVerifyToAllOperators(task: Task): Promise<string> {
 		  const responseJson = await response.json();
 		  console.log("responseJson", responseJson);
   
-		  // Validate the response using Zod
-		  const serviceResponse = TaskResponseSchema.parse(responseJson);
+		  const serviceResponse: any = (responseJson as ServiceResponse<TaskResponse>).responseObject;
+
   
 		  console.log("ServiceRes,", serviceResponse);
 		  return serviceResponse;
@@ -235,45 +168,67 @@ async function sendTaskVerifyToAllOperators(task: Task): Promise<string> {
 	);
   
 	// Filter out undefined responses
-	const validResponses = operatorResponses.filter((response): response is TaskResponse => response !== undefined);
-  
-	// Verify operator responses asynchronously
-	const verifiedResponses = await Promise.all(
-	  validResponses.map(async (response) => {
-		const isVerified = await verifyMessage({
-		  address: response.publicKey as Address,
-		  message: JSON.stringify(response.completedTask),
-		  signature: response.signature as Hex,
-		});
-		return isVerified ? response : undefined; // Return verified responses
-	  })
-	);
-  
-	console.log("verifiedResponses ",verifiedResponses);
-	// Filter out non-verified responses
-	const filteredVerifiedResponses = verifiedResponses.filter((response): response is TaskResponse => response !== undefined);
-   console.log("filered ",filteredVerifiedResponses);
-	// Map to aggregate operator responses by transaction status
-	const responseMap: Map<string, number> = new Map(); // Use string for transactionStatus keys
+	
+	operatorResponses = operatorResponses.filter(async (response) => {
+        if (!response) {
+            return false; // Exclude null responses
+        }
+        
 
-// Iterate through the filtered verified responses to aggregate based on transactionStatus
-// for (const operator of filteredVerifiedResponses) {
-//   const transactionStatus = operator.completedTask.transactionStatus; // Access transactionStatus correctly
-//   const existingCount = responseMap.get(transactionStatus) || 0; // Get current count or 0
-//   responseMap.set(transactionStatus, existingCount + 1); // Increment count for this status
-// }
+        const isVerified = await verifyMessage({
+            address: response?.publicKey as any,
+            message: JSON.stringify(response.completedTask),
+            signature: response.signature as any,
+        });
+		console.log("isVerified",isVerified);
+        return isVerified;
+    });
 
-// 	// Determine the most frequent response by count
-// 	const mostFrequentResponse = [...responseMap.entries()].reduce((a, b) => (b[1] > a[1] ? b : a));
-  
-// 	// Check if the majority stake is reached
-// 	const totalResponses = filteredVerifiedResponses.length;
-// 	if (mostFrequentResponse[1] < totalResponses / 2) {
-// 	  throw new Error("Majority not reached");
-// 	}
-  
-// 	console.log("Most Frequent Response:", mostFrequentResponse);
-// 	return mostFrequentResponse[0]; // Return the most frequent transaction status
-    return  "0"; 
-  }
-  
+
+    // Map to aggregate operator responses by stake
+    const responseMap: Map<TaskResponse, String> = new Map();
+    const [operatorStakes, totalStake] = await getOperatorStakeMapping(
+        operatorResponses.map((response) => response.publicKey!),
+        0n
+    );
+
+
+	console.log("operatorResponses",operatorResponses);
+    // Aggregate responses by operator stakes
+	for (const operator of operatorResponses) {
+		console.log("operator", operator);
+		
+		// Assuming completedTask has a transactionStatus or another property to be used as the key
+		const operatorResponseKey = operator.completedTask; // Change this based on your structure
+		const existingStake = responseMap.get(operatorResponseKey.response) || 0n; // Use the correct key
+		const stakeAmount = operatorStakes.get(operator.publicKey!) || 0n; // Get the stake amount
+		
+		// Update the responseMap
+		responseMap.set(operatorResponseKey, existingStake + stakeAmount);
+	}
+    // Log the response map before aggregation
+    console.log("Response map before aggregation:", Array.from(responseMap.entries()));
+
+    // Determine the most frequent response by stake
+    const entries = [...responseMap.entries()];
+
+    // Check if entries array is empty
+    if (entries.length === 0) {
+        throw new Error("No valid responses to aggregate");
+    }
+
+    // Use reduce with an initial value
+    const mostFrequentResponse = entries.reduce(
+        (a, b) => (b[1] > a[1] ? b : a),
+        [0, 0n] // Initial value: [key, BigInt(0)]
+    );
+
+    console.log("mostFrequentResponse", mostFrequentResponse);
+
+    // Check if the majority stake is reached
+    if (mostFrequentResponse[1] < totalStake / 2n) {
+        throw new Error("Majority not reached");
+    }
+
+    return mostFrequentResponse[0].toString();
+}
