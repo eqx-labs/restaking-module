@@ -93,7 +93,7 @@ impl ContractManager {
         task_response: OperatorResponse,
     ) -> Result<(), TaskError> {
 
-        info!("submit_task_response  {:?}",dss_task_request);
+
         info!("submit_task_responseafter  {:?}",dss_task_request.transaction_hash);
 
 

@@ -137,12 +137,60 @@
 	{
 		"inputs": [
 			{
-				"internalType": "bytes32",
+				"internalType": "string",
 				"name": "taskRequest",
-				"type": "bytes32"
+				"type": "string"
 			}
 		],
 		"name": "getTaskResponse",
+		"outputs": [
+			{
+				"components": [
+					{
+						"internalType": "bool",
+						"name": "is_included",
+						"type": "bool"
+					},
+					{
+						"internalType": "uint64",
+						"name": "proposer_index",
+						"type": "uint64"
+					},
+					{
+						"internalType": "string",
+						"name": "block_number",
+						"type": "string"
+					}
+				],
+				"internalType": "struct TxnVerifier.OperatorResponse",
+				"name": "",
+				"type": "tuple"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"components": [
+					{
+						"internalType": "string",
+						"name": "transaction_hash",
+						"type": "string"
+					},
+					{
+						"internalType": "string",
+						"name": "block_number",
+						"type": "string"
+					}
+				],
+				"internalType": "struct TxnVerifier.Task",
+				"name": "taskRequest",
+				"type": "tuple"
+			}
+		],
+		"name": "getTaskResponseVerifiy",
 		"outputs": [
 			{
 				"components": [
@@ -276,9 +324,9 @@
 	{
 		"inputs": [
 			{
-				"internalType": "bytes32",
+				"internalType": "string",
 				"name": "taskRequest",
-				"type": "bytes32"
+				"type": "string"
 			},
 			{
 				"components": [

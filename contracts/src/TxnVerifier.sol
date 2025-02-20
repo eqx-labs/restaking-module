@@ -24,7 +24,7 @@ contract TxnVerifier is IDSS {
     struct OperatorResponse {
         bool is_included;
         uint64 proposer_index;
-        string block_number;    // Fixed syntax error: removed period
+        string block_number;    
     }
     
 
@@ -65,18 +65,23 @@ contract TxnVerifier is IDSS {
         emit TxnVerificationResult(txnHash, blockNumber);
     }
     
-    function submitTaskResponse(bytes32 taskRequest, OperatorResponse calldata taskResponse)    // Fixed parameter name
+    function submitTaskResponse(string calldata taskRequest, OperatorResponse calldata taskResponse)   
         external
         onlyAggregator
     {
-        bytes32 taskRequestHash = keccak256(abi.encode(taskRequest));    // Fixed typo in variable name
+        bytes32 taskRequestHash = keccak256(abi.encode(taskRequest));  
         taskCompleted[taskRequestHash] = true;
         taskResponses[taskRequestHash] = taskResponse;
         emit TaskResponseSubmitted(taskResponse);
     }
+ 
 
+    function getTaskResponseVerifiy(Task calldata taskRequest) external view returns (OperatorResponse memory) {
+        bytes32 taskRequestHash = keccak256(abi.encode(taskRequest));
+        return taskResponses[taskRequestHash];
+    }
 
-    function getTaskResponse(bytes32 taskRequest) external view returns (OperatorResponse memory) {
+    function getTaskResponse(string calldata taskRequest) external view returns (OperatorResponse memory) {
         bytes32 taskRequestHash = keccak256(abi.encode(taskRequest));
         return taskResponses[taskRequestHash];
     }
