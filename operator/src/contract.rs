@@ -5,3 +5,10 @@ sol!(
     SquareNumberDSS,
     "../abi/SquareNumberDSS.json",
 );
+
+sol!(
+    #[sol(rpc)]
+    TxnVerifier,
+    "../abi/TxnVerifier.json",
+);
+

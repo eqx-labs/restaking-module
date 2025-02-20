@@ -12,6 +12,7 @@ use ethers::{
 };
 use crate::PrivateKeySigner;
 use k256::ecdsa::SigningKey;
+use tracing::info;
 
 // Request and response types
 #[derive(Debug, Serialize, Deserialize)]
@@ -35,12 +36,19 @@ struct BeaconApiResponse {
 
 #[derive(Debug, Serialize, Deserialize)]
 struct BlockData {
+    #[serde(rename = "posConsensus")] 
     pos_consensus: PosConsensus,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 struct PosConsensus {
+    #[serde(rename = "proposerIndex")]
     proposer_index: u64,
+    #[serde(rename = "executionBlockNumber")]
+    execution_block_number: u64,
+    slot: u64,
+    epoch: u64,
+    finalized: bool,
 }
 
 // Application state
@@ -73,11 +81,17 @@ async fn is_transaction_in_block(
     let tx = provider
         .get_transaction(tx_hash)
         .await?;
+        info!("tx     {:?}",tx);
+        info!("block_number     {:?}",block_number);
+        info!("tx_hash     {:?}",tx_hash);
+
 
     match tx {
         Some(tx) => {
             let tx_block_number = tx.block_number.unwrap_or_default();
-            let expected_block = block_number.parse::<U256>()?;
+            let expected_block = U256::from_dec_str(block_number)?;
+            info!("expected_block     {:?}",expected_block);
+            info!("tx_block_number     {:?}",tx_block_number);
             Ok(tx_block_number.as_u64() == expected_block.as_u64())
         }
         None => Ok(false),
@@ -93,18 +107,39 @@ async fn get_block_proposer(
         block_number
     );
 
+    info!("url {:?}", url);
+
     let response = client
         .get(&url)
         .send()
         .await?;
 
-    let beacon_response: BeaconApiResponse = response.json().await?;
+    if !response.status().is_success() {
+        info!("Failed to get response from beaconcha.in: {}", response.status());
+        return Ok(None);
+    }
 
-    Ok(beacon_response
-        .data
-        .first()
-        .map(|block| block.pos_consensus.proposer_index))
+    let response_text = response.text().await?;
+    info!("Response text: {}", response_text);
+
+    match serde_json::from_str::<BeaconApiResponse>(&response_text) {
+        Ok(beacon_response) => {
+            // Get the proposer_index from the first block's posConsensus data
+            let proposer_index = beacon_response
+                .data
+                .first()
+                .map(|block| block.pos_consensus.proposer_index);
+            
+            info!("Found proposer_index: {:?}", proposer_index);
+            Ok(proposer_index)
+        }
+        Err(e) => {
+            info!("Failed to parse beacon response: {}", e);
+            Ok(None)
+        }
+    }
 }
+
 
 // API handlers
 async fn verify_transaction(
@@ -119,13 +154,22 @@ async fn verify_transaction(
     .await
     .map_err(|e| e.to_string())?;
 
+
+    info!("is_included   {:?}",is_included);
+
     let proposer_index = if is_included {
+        info!("checking ");
         get_block_proposer(&state.client, &request.block_number)
             .await
             .map_err(|e| e.to_string())?
     } else {
         None
     };
+
+
+
+    info!("is_included {:?}, {:?}",is_included,proposer_index  );
+
 
     Ok(Json(VerificationResponse {
         is_included,
@@ -151,3 +195,4 @@ pub fn operator_router(wallet: PrivateKeySigner) -> Router {
         .route("/health", get(health_check))
         .with_state(state)
 }
+

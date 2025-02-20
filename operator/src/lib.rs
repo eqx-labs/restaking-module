@@ -21,6 +21,7 @@ pub struct Config {
     pub domain_url: Url,
     pub aggregator_url: Url,
     pub square_number_dss_address: Address,
+     pub txn_verifier_address:Address,
     pub core_address: Address,
     pub heartbeat: u64,
 }

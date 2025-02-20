@@ -8,33 +8,51 @@ import {Operator} from "./karak/src/entities/Operator.sol";
 contract TxnVerifier is IDSS {
     // Event to emit the verification result
     event TxnVerificationResult(bytes32 txnHash, uint256 blockNumber);
-    event Received(bool msgFromContract, uint256 proposer);
-    event IsValidAndProposer(bool isValid, uint256 proposer);
-
+    
+    event TaskResponseSubmitted(OperatorResponse taskResponse);
+    
     // Store verified transactions
     mapping(bytes32 => uint256) public verifiedTxns;
-
+      mapping(address operatorAddress => bool exists) operatorExists;
+    
+    mapping(bytes32 => bool) public taskCompleted;
     // Aggregator address
     address public aggregator;
     ICore core;
+    
 
+    struct OperatorResponse {
+        bool is_included;
+        uint64 proposer_index;
+        string block_number;    // Fixed syntax error: removed period
+    }
+    
+
+    struct Task {
+        string transaction_hash;
+        string block_number;
+    }
+    
     // State variables to store txnValid and proposer
     bool private txnValid;
     uint256 private proposer;
-
+    
+    // Added missing mapping
+    mapping(bytes32 => OperatorResponse) public taskResponses;
+    
     /* ======= Modifiers ======= */
     modifier onlyAggregator() {
         require(msg.sender == aggregator, "Not Aggregator");
         _;
     }
-
+    
     constructor(address _aggregator, ICore _core) {
         aggregator = _aggregator;
         core = _core;
     }
-
+    
     /* ======= External Functions ======= */
-
+    
     // Function to verify transaction inclusion
     function verifyTransaction(
         bytes32 txnHash,
@@ -42,78 +60,77 @@ contract TxnVerifier is IDSS {
     ) public {
         // Simulate verification logic here (placeholder)
         verifiedTxns[txnHash] = blockNumber;
-
+        
         // Emit the verification result
         emit TxnVerificationResult(txnHash, blockNumber);
     }
-
-    // Function to validate proposer transaction
-    function validateProposerTransaction(
-        uint256 _proposer,
-        bool _txnValid
-    ) external {
-        // Emit the result
-        emit Received(_txnValid, _proposer);
-        
-        // Store the values in state variables
-        txnValid = _txnValid;
-        proposer = _proposer;
-
-        // Emit the new event with the stored values
-        emit IsValidAndProposer(txnValid, proposer);
+    
+    function submitTaskResponse(bytes32 taskRequest, OperatorResponse calldata taskResponse)    // Fixed parameter name
+        external
+        onlyAggregator
+    {
+        bytes32 taskRequestHash = keccak256(abi.encode(taskRequest));    // Fixed typo in variable name
+        taskCompleted[taskRequestHash] = true;
+        taskResponses[taskRequestHash] = taskResponse;
+        emit TaskResponseSubmitted(taskResponse);
     }
 
-    // New function to emit stored isValid and proposer
-    function emitStoredIsValidAndProposer() external {
-        // Emit the stored values
-        emit IsValidAndProposer(txnValid, proposer);
+
+    function getTaskResponse(bytes32 taskRequest) external view returns (OperatorResponse memory) {
+        bytes32 taskRequestHash = keccak256(abi.encode(taskRequest));
+        return taskResponses[taskRequestHash];
     }
 
+      function isOperatorRegistered(address operator) external view returns (bool) {
+        return operatorExists[operator];
+    }
+
+    
     /* ======= IDSS Interface Functions ======= */
-
+    
     function supportsInterface(
         bytes4 interfaceID
     ) external pure returns (bool) {
         return (interfaceID == IDSS.registrationHook.selector ||
             interfaceID == IDSS.unregistrationHook.selector);
     }
-
+    
     function registerToCore(uint256 slashablePercentage) external {
         core.registerDSS(slashablePercentage);
     }
-
+    
     function registrationHook(
         address operator,
         bytes memory extraData
     ) external {
         // Registration logic for operators
     }
-
+    
     function unregistrationHook(
         address operator,
         bytes memory extraData
     ) external {
         // Unregistration logic for operators
     }
-
+    
     function requestUpdateStakeHook(
         address operator,
         Operator.StakeUpdateRequest memory newStake
     ) external override {}
-
+    
     function cancelUpdateStakeHook(
         address operator,
         address vault
     ) external override {}
-
+    
     function finishUpdateStakeHook(address operator) external override {}
-
+    
     function requestSlashingHook(
         address operator,
         uint256[] memory slashingPercentagesWad
     ) external override {}
-
+    
     function cancelSlashingHook(address operator) external override {}
-
+    
     function finishSlashingHook(address operator) external override {}
 }

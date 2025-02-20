@@ -15,6 +15,8 @@ use alloy::{
 };
 use chrono::{DateTime, Utc};
 use eyre::Result;
+// use crate::task::TxnVerifier::OperatorResponse;
+use crate::task::SquareNumberDSS::TaskResponse;
 use serde::{Deserialize, Serialize};
 use tokio::{
     signal,
@@ -58,10 +60,10 @@ pub struct CompletedTask {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct TaskResponse {
-    pub completed_task: CompletedTask,
-    pub public_key: Address,
-    pub signature: Signature,
+pub struct OperatorResponse {
+    pub is_included: bool,
+    pub proposer_index: Option<u64>,
+    pub block_number: String,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -79,6 +81,7 @@ pub struct TaskService {
     rpc_url: Url,
     private_key: alloy::signers::local::PrivateKeySigner,
     client: Client,
+    txn_verifier_address:Address,
     heartbeat_interval: Duration,
 }
 
@@ -91,12 +94,14 @@ impl TaskService {
         let block_number: u64 = config.load_block_number()?;
         let rpc_url = config.get_rpc_url()?;
         let private_key = config.get_private_key()?;
+        let txn_verifier_address=config.txn_verifier_address;
         let heartbeat_interval = Duration::from_millis(config.heartbeat);
         let client = Client::new();
         Ok(Self {
             contract_manager,
             operator_state,
             square_number_address,
+            txn_verifier_address,
             dss_address,
             block_number_store,
             block_number,
@@ -133,12 +138,12 @@ impl TaskService {
     }
 
     async fn watch_for_task_events(&self) -> Result<()> {
-        let square_number_address = self.square_number_address;
+        let txn_verifier_address = self.txn_verifier_address;
         let next_block_to_check: u64 = self.block_number;
         let filter = Filter::new()
-            .address(square_number_address)
+            .address(txn_verifier_address)
             .from_block(BlockNumberOrTag::Number(next_block_to_check));
-
+    
         let operators = match self.operator_state.operators.read() {
             Ok(guard) => guard.clone(),
             Err(PoisonError { .. }) => {
@@ -148,35 +153,60 @@ impl TaskService {
                 ));
             }
         };
+        
         let logs = self.contract_manager.provider.get_logs(&filter).await?;
         let mut new_last_checked_block = next_block_to_check;
+
+        info!("logs for mine {:?}",logs);
 
         for log in logs {
             if let Some(&TxnVerifier::TxnVerificationResult::SIGNATURE_HASH) = log.topic0() {
                 let TxnVerifier::TxnVerificationResult {
-                    sender: _,
-                    taskRequest,
+                    txnHash,
+                    blockNumber,
                 } = log.log_decode()?.inner.data;
+
+                info!("logs for individial  {:?}",log);
+
+                info!("txnHash_workd   {:?}",txnHash);
+                info!("blockNumber_world   {:?}",blockNumber);
+
+
+
                 let task = Task {
-                    transaction_hash: format!("0x{:x}", taskRequest.value), // Convert value to hex string
-                    block_number: log.block_number
-                        .expect("Invalid block number")
-                        .to_string(),
+                    transaction_hash: txnHash.to_string(),
+                    block_number:blockNumber.to_string()
+
                 };
-                let block_number = log.block_number.expect("Invalid block number");
-                let task_request = TaskRequest { task, block_number };
+
+                info!("operators   {:?}",operators);
+
 
                 if !operators.is_empty() {
                     let response = self
-                        .send_task_to_all_operators(task_request.task, &operators)
+                        .send_task_to_all_operators(task, &operators)
                         .await?;
 
-                        let task_response = TxnVerifier::TaskResponse { 
-                            response: response 
-                        };
-                    let dss_task_request = TxnVerifier::TaskRequest {
-                        value: taskRequest.value,
+
+                        info!("response_operators     {:?}",response);
+
+
+
+                    let task_response = TxnVerifier::OperatorResponse {
+                        is_included: response.is_included,
+                        proposer_index: response.proposer_index.unwrap_or(0) as u64,
+                        block_number: response.block_number,
                     };
+                    
+                    let dss_task_request = TxnVerifier::Task {
+                        transaction_hash: txnHash.to_string(),
+                        block_number:blockNumber.to_string()
+    
+
+                    };
+
+                    // info!("response_operators  {:?}",task_response);
+
                     match self
                         .contract_manager
                         .submit_task_response(dss_task_request, task_response)
@@ -185,19 +215,25 @@ impl TaskService {
                         Ok(tx) => info!("Transaction sent: {:?}", tx),
                         Err(e) => error!("Failed to send transaction: {:?}", e),
                     }
-                    new_last_checked_block =
-                        new_last_checked_block.max(task_request.block_number + 1);
+                    // new_last_checked_block =
+                        // new_last_checked_block.max(task_request.block_number + 1);
                 } else {
                     info!("No operators are registered or no task requests were found.");
                 }
             }
         }
+ 
+ 
+
+        
         let _ = self
             .write_block_number_to_file(&self.block_number_store, new_last_checked_block)
             .await;
-
+    
         Ok(())
     }
+
+
 
     async fn get_operator_stake_normalized_eth(
         &self,
@@ -254,116 +290,60 @@ impl TaskService {
         &self,
         task: Task,
         operators: &HashSet<Operator>,
-    ) -> Result<U256, TaskError> {
-        let mut operator_responses = Vec::new();
-
+    ) -> Result<OperatorResponse, TaskError> {
+        // Store any error to return if no operator succeeds
+        let mut last_error: Option<TaskError> = None;
+    
         for operator in operators.iter() {
             let operator = operator.clone();
-
-            let res = self
+    
+            match self
                 .client
                 .post(format!("{}operator/verify", operator.url()))
                 .header("Content-Type", "application/json")
                 .json(&task)
                 .send()
-                .await;
-
-            match res {
+                .await
+            {
                 Ok(response) => {
-                    let body_result = response.text().await;
-
-                    match body_result {
+                    match response.text().await {
                         Ok(body) => {
-                            let response_json_result: Result<TaskResponse, serde_json::Error> =
-                                serde_json::from_str(&body);
-                            match response_json_result {
-                                Ok(response_json) => {
-                                    operator_responses.push(response_json);
+                            match serde_json::from_str::<OperatorResponse>(&body) {
+                                Ok(operator_response) => {
+
+                                    info!("operator_response {:?}",operator_response);
+                                    return Ok(operator_response);
                                 }
                                 Err(e) => {
-                                    error!(
-                                        "Error parsing JSON response from {}: {:?}",
-                                        operator.url(),
-                                        e
-                                    );
+                                    error!("Failed to parse operator response: {:?}", e);
+                                    // last_error = Some(TaskError::ParseError(e.to_string()));
                                 }
                             }
                         }
                         Err(e) => {
-                            error!(
-                                "Error reading response body from {}: {:?}",
-                                operator.url(),
-                                e
-                            );
+                            error!("Failed to get response body: {:?}", e);
+                            // last_error = Some(TaskError::ResponseError(e.to_string()));
                         }
                     }
                 }
                 Err(e) => {
-                    error!("Error sending task to {}: {:?}", operator.url(), e);
+                    error!("Failed to get response: {:?}", e);
+                    // last_error = Some(TaskError::RequestError(e.to_string()));
                 }
             }
         }
-
-        info!("op_RES_LEN: {}", operator_responses.len());
-
-        let mut verified_responses = Vec::new();
-
-        for response in operator_responses {
-            let is_verified = self.verify_message(&response).await.map_err(|e| {
-                error!("Error verifying message: {:?}", e);
-                TaskError::TaskVerificationFailed
-            })?;
-
-            if is_verified {
-                verified_responses.push(response);
-            } else {
-                error!("Task response verification failed.");
-            }
-        }
-
-        let mut response_map = HashMap::new();
-
-        let addresses: Vec<Address> = verified_responses
-            .iter()
-            .map(|r| Ok(r.public_key))
-            .collect::<Result<_, TaskError>>()?;
-
-        let (operator_stakes, total_stake) = self
-            .get_operator_stake_mapping(addresses, Uint::from(0u64))
-            .await?;
-
-        let default_stake = Uint::from(0u64);
-
-        for response in verified_responses.iter() {
-            let response_value = Uint::from(response.completed_task.response);
-            let public_key = response.public_key;
-            let stake = operator_stakes.get(&public_key).unwrap_or(&default_stake);
-
-            *response_map.entry(response_value).or_insert(default_stake) += *stake;
-        }
-
-        info!("Finished mapping responses to stakes.");
-
-        let most_frequent_response = response_map
-            .into_iter()
-            .max_by_key(|&(_, stake)| stake)
-            .ok_or(TaskError::TaskVerificationFailed)?;
-
-        if most_frequent_response.1 < total_stake / Uint::from(2u64) {
-            error!("Majority not reached. Expected at least half of total stake.");
-            return Err(TaskError::MajorityNotReached);
-        }
-
-        Ok(most_frequent_response.0)
+    
+        // If we got here, no operator succeeded
+        Err(last_error.unwrap_or(TaskError::NoOperatorAvailable))
     }
 
-    async fn verify_message(&self, task_response: &TaskResponse) -> Result<bool> {
-        let address: Address = task_response.public_key;
-        let signature: Signature = task_response.signature;
-        let message = serde_json::to_string(&task_response.completed_task)?;
-        let recovered_address = signature.recover_address_from_msg(message)?;
-        Ok(recovered_address == address)
-    }
+    // async fn verify_message(&self, task_response: &OperatorResponse) -> Result<bool> {
+    //     let address: Address = task_response.public_key;
+    //     let signature: Signature = task_response.signature;
+    //     let message = serde_json::to_string(&task_response.completed_task)?;
+    //     let recovered_address = signature.recover_address_from_msg(message)?;
+    //     Ok(recovered_address == address)
+    // }
 
     async fn write_block_number_to_file(&self, file: &str, val: u64) -> Result<()> {
         let data = BlockNumberData { block_number: val };

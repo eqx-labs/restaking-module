@@ -1,4 +1,4 @@
-use crate::{contract::SquareNumberDSS::SquareNumberDSSInstance, Config};
+use crate::{contract::TxnVerifier::TxnVerifierInstance, Config};
 use alloy::{
     network::{Ethereum, EthereumWallet},
     primitives::Address,
@@ -31,7 +31,7 @@ pub type RecommendedProvider = FillProvider<
 >;
 
 pub struct RegistrationService {
-    dss_instance: SquareNumberDSSInstance<ReqwestTransport, RecommendedProvider>,
+    dss_instance: TxnVerifierInstance<ReqwestTransport, RecommendedProvider>,
     core_instance: CoreInstance<ReqwestTransport, RecommendedProvider>,
     operator_address: Address,
     aggregator_url: Url,
@@ -47,7 +47,7 @@ impl RegistrationService {
             .wallet(EthereumWallet::from(config.private_key.clone()))
             .on_http(config.rpc_url);
         let dss_instance =
-            SquareNumberDSSInstance::new(config.square_number_dss_address, provider.clone());
+        TxnVerifierInstance::new(config.txn_verifier_address, provider.clone());
         let core_instance = CoreInstance::new(config.core_address, provider);
         let heartbeat_interval = Duration::from_millis(config.heartbeat);
         Ok(Self {

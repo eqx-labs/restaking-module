@@ -56,6 +56,12 @@ pub enum TaskError {
 
     #[error("Custom URL error: {0}")]
     CustomUrlError(String),
+
+    #[error("NoOperatorAvailable")]
+    NoOperatorAvailable,
+
+    #[error("RequestError")]
+    RequestError
 }
 
 impl Config {

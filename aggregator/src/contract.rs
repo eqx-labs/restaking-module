@@ -7,7 +7,8 @@ use alloy::transports::http::ReqwestTransport;
 use karak_rs::contracts::Core::CoreInstance;
 use url::Url;
 use SquareNumberDSS::{TaskRequest, TaskResponse};
-use TxnVerifier;
+use TxnVerifier::{Task,OperatorResponse};
+use tracing::info;
 
 use crate::Config;
 use crate::TaskError;
@@ -41,7 +42,7 @@ type RecommendedProvider = FillProvider<
 
 pub struct ContractManager {
     pub dss_instance:
-        SquareNumberDSS::SquareNumberDSSInstance<ReqwestTransport, RecommendedProvider>,
+    TxnVerifier::TxnVerifierInstance<ReqwestTransport, RecommendedProvider>,
     pub core_instance: CoreInstance<ReqwestTransport, RecommendedProvider>,
     pub provider: RecommendedProvider,
 }
@@ -59,7 +60,7 @@ impl ContractManager {
             .on_http(rpc_url);
 
         let txn_verifier_address = config.txn_verifier_address;
-        let dss_instance = SquareNumberDSS::new(txn_verifier_address, provider.clone());
+        let dss_instance = TxnVerifier::new(txn_verifier_address, provider.clone());
 
         let core_address = config.core_address;
         let core_instance = CoreInstance::new(core_address, provider.clone());
@@ -88,12 +89,17 @@ impl ContractManager {
 
     pub async fn submit_task_response(
         &self,
-        dss_task_request: TaskRequest,
-        task_response: TaskResponse,
+        dss_task_request: Task,
+        task_response: OperatorResponse,
     ) -> Result<(), TaskError> {
+
+        info!("submit_task_response  {:?}",dss_task_request);
+        info!("submit_task_responseafter  {:?}",dss_task_request.transaction_hash);
+
+
         let _ = self
             .dss_instance
-            .submitTaskResponse(dss_task_request, task_response)
+            .submitTaskResponse(dss_task_request.transaction_hash, task_response)
             .send()
             .await
             .map_err(|_| TaskError::ContractCallError)?;
