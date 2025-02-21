@@ -30,6 +30,7 @@ services:
     contract-deployer:
         image: ghcr.io/foundry-rs/foundry:nightly
         platform: linux/amd64
+        user: root 
         volumes:
             - ./:/dss
         working_dir: /dss/contracts
@@ -39,6 +40,7 @@ services:
             - /bin/sh
             - -c
             - |
+              rm -f /dss/deploy.status &&
               while [ ! -f /dss/builder.status ] || [ $(cat /dss/builder.status) != 'success' ]; do
               echo 'Waiting for contract-builder to complete...';
               sleep 2;
@@ -78,7 +80,7 @@ services:
             - TXN_VERIFIER_ADDRESS=0x3Aa5ebB10DC797CAC828524e59A333d0A371443c
             - CORE_ADDRESS=0x9bd03768a7DCc129555dE410FF8E85528A4F88b5
         entrypoint: >
-            sh -c " while [ ! -f /dss/deploy.status ] || [ \$(cat /dss/deploy.status) != 'success' ]; do echo 'Waiting for contract-deployer to complete...'; sleep 2; done && /app/square-number-dss-aggregator "
+            sh -c "while [ ! -f /dss/deploy.status ] || [ \$(cat /dss/deploy.status) != 'success' ]; do echo 'Waiting for contract-deployer to complete...'; sleep 2; done && /app/square-number-dss-aggregator"
 
     operator-1:
         image: square-number-dss-operator

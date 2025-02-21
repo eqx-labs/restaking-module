@@ -94,12 +94,12 @@ impl ContractManager {
     ) -> Result<(), TaskError> {
 
 
-        info!("submit_task_responseafter  {:?}",dss_task_request.transaction_hash);
+        info!("submit_task_responseafter  {:?}",dss_task_request.pubkey);
 
 
         let _ = self
             .dss_instance
-            .submitTaskResponse(dss_task_request.transaction_hash, task_response)
+            .submitTaskResponse(dss_task_request.pubkey,dss_task_request.transaction_hash, task_response)
             .send()
             .await
             .map_err(|_| TaskError::ContractCallError)?;

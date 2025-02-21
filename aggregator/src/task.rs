@@ -33,6 +33,7 @@ use crate::{
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Task {
+    pub pubkey:String,
     pub transaction_hash: String,
     pub block_number: String,
 }
@@ -162,11 +163,13 @@ impl TaskService {
         for log in logs {
             if let Some(&TxnVerifier::TxnVerificationResult::SIGNATURE_HASH) = log.topic0() {
                 let TxnVerifier::TxnVerificationResult {
+                    pubkey,
                     txnHash,
                     blockNumber,
                 } = log.log_decode()?.inner.data;
 
                 info!("logs for individial  {:?}",log);
+                info!("logs_pubkey  {:?}",pubkey);
 
                 info!("txnHash_workd   {:?}",txnHash);
                 info!("blockNumber_world   {:?}",blockNumber);
@@ -174,6 +177,7 @@ impl TaskService {
 
 
                 let task = Task {
+                    pubkey:pubkey.to_string(),
                     transaction_hash: txnHash.to_string(),
                     block_number:blockNumber.to_string()
 
@@ -199,6 +203,7 @@ impl TaskService {
                     };
                     
                     let dss_task_request = TxnVerifier::Task {
+                        pubkey:pubkey.to_string(),
                         transaction_hash: txnHash.to_string(),
                         block_number:blockNumber.to_string()
     

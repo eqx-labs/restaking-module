@@ -5,14 +5,19 @@ import {IDSS} from "./karak/src/interfaces/IDSS.sol";
 import {ICore} from "./karak/src/interfaces/ICore.sol";
 import {Operator} from "./karak/src/entities/Operator.sol";
 
+
+
 contract TxnVerifier is IDSS {
     // Event to emit the verification result
-    event TxnVerificationResult(bytes32 txnHash, uint256 blockNumber);
+    // event TxnVerificationResult(bytes32 txnHash, uint256 blockNumber);
+      event TxnVerificationResult(string pubkey, bytes32 txnHash, uint256 blockNumber);
+    
     
     event TaskResponseSubmitted(OperatorResponse taskResponse);
     
     // Store verified transactions
-    mapping(bytes32 => uint256) public verifiedTxns;
+    // mapping(bytes32 => uint256) public verifiedTxns;
+      mapping(string => mapping(bytes32 => uint256)) public verifiedTxns;
       mapping(address operatorAddress => bool exists) operatorExists;
     
     mapping(bytes32 => bool) public taskCompleted;
@@ -29,6 +34,7 @@ contract TxnVerifier is IDSS {
     
 
     struct Task {
+        string pubkey;
         string transaction_hash;
         string block_number;
     }
@@ -55,34 +61,59 @@ contract TxnVerifier is IDSS {
     
     // Function to verify transaction inclusion
     function verifyTransaction(
+        string calldata pubkey, 
         bytes32 txnHash,
         uint256 blockNumber
     ) public {
         // Simulate verification logic here (placeholder)
-        verifiedTxns[txnHash] = blockNumber;
+        // verifiedTxns[txnHash] = blockNumber;
+
+        verifiedTxns[pubkey][txnHash] = blockNumber;
+        
+
         
         // Emit the verification result
-        emit TxnVerificationResult(txnHash, blockNumber);
+        // emit TxnVerificationResult(txnHash, blockNumber);
+        emit TxnVerificationResult(pubkey, txnHash, blockNumber);
     }
     
-    function submitTaskResponse(string calldata taskRequest, OperatorResponse calldata taskResponse)   
-        external
-        onlyAggregator
-    {
-        bytes32 taskRequestHash = keccak256(abi.encode(taskRequest));  
-        taskCompleted[taskRequestHash] = true;
-        taskResponses[taskRequestHash] = taskResponse;
-        emit TaskResponseSubmitted(taskResponse);
-    }
+    // function submitTaskResponse(string calldata pubkey ,string calldata taskRequest, OperatorResponse calldata taskResponse)   
+    //     external
+    //     onlyAggregator
+    // {
+    //     bytes32 taskRequestHash = keccak256(abi.encode(taskRequest));  
+    //     taskCompleted[taskRequestHash] = true;
+    //     taskResponses[taskRequestHash] = taskResponse;
+    //     emit TaskResponseSubmitted(taskResponse);
+    // }
  
+ function submitTaskResponse(
+    string calldata pubkey,
+    string calldata taskRequest,
+    OperatorResponse calldata taskResponse
+) external onlyAggregator {
+    // Hash pubkey and taskRequest together to create a unique identifier
+    bytes32 taskRequestHash = keccak256(abi.encode(pubkey, taskRequest));  
+
+    // Store the task completion status and response
+    taskCompleted[taskRequestHash] = true;
+    taskResponses[taskRequestHash] = taskResponse;
+
+    // Emit event with the response
+    emit TaskResponseSubmitted(taskResponse);
+}
+
+
 
     function getTaskResponseVerifiy(Task calldata taskRequest) external view returns (OperatorResponse memory) {
         bytes32 taskRequestHash = keccak256(abi.encode(taskRequest));
         return taskResponses[taskRequestHash];
     }
 
-    function getTaskResponse(string calldata taskRequest) external view returns (OperatorResponse memory) {
-        bytes32 taskRequestHash = keccak256(abi.encode(taskRequest));
+    function getTaskResponse(string calldata pubkey ,string calldata taskRequest) external view returns (OperatorResponse memory) {
+        // bytes32 taskRequestHash = keccak256(abi.encode(taskRequest));
+          bytes32 taskRequestHash = keccak256(abi.encode(pubkey, taskRequest));  
+
         return taskResponses[taskRequestHash];
     }
 
