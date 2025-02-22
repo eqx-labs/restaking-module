@@ -45,10 +45,16 @@ contract TxnVerifier is IDSS {
     
     // Added missing mapping
     mapping(bytes32 => OperatorResponse) public taskResponses;
+     address[] operatorAddresses;
     
     /* ======= Modifiers ======= */
     modifier onlyAggregator() {
         require(msg.sender == aggregator, "Not Aggregator");
+        _;
+    }
+
+        modifier senderIsOperator(address operator) {
+        if (tx.origin != operator) revert SenderNotOperator();
         _;
     }
     
@@ -117,7 +123,7 @@ contract TxnVerifier is IDSS {
         return taskResponses[taskRequestHash];
     }
 
-      function isOperatorRegistered(address operator) external view returns (bool) {
+     function isOperatorRegistered(address operator) external view returns (bool) {
         return operatorExists[operator];
     }
 
@@ -135,19 +141,25 @@ contract TxnVerifier is IDSS {
         core.registerDSS(slashablePercentage);
     }
     
-    function registrationHook(
-        address operator,
-        bytes memory extraData
-    ) external {
-        // Registration logic for operators
+  function registrationHook(address operator, bytes memory extraData) external senderIsOperator(operator) {
+        extraData = extraData;
+        if (operatorExists[operator]) revert OperatorAlreadyRegistered();
+        operatorAddresses.push(operator);
+        operatorExists[operator] = true;
     }
+
+
     
-    function unregistrationHook(
-        address operator,
-        bytes memory extraData
-    ) external {
-        // Unregistration logic for operators
+    function unregistrationHook(address operator, bytes memory extraData) external senderIsOperator(operator) {
+        uint256 index = abi.decode(extraData, (uint256));
+        if (operator != operatorAddresses[index]) revert OperatorAndIndexDontMatch();
+        if (!operatorExists[operator]) revert OperatorIsNotRegistered();
+        uint256 operatorAddressesLength = operatorAddresses.length;
+        operatorAddresses[index] = operatorAddresses[operatorAddressesLength - 1];
+        operatorAddresses.pop();
+        operatorExists[operator] = false;
     }
+
     
     function requestUpdateStakeHook(
         address operator,
@@ -169,4 +181,9 @@ contract TxnVerifier is IDSS {
     function cancelSlashingHook(address operator) external override {}
     
     function finishSlashingHook(address operator) external override {}
+
+     error SenderNotOperator();
+      error OperatorAlreadyRegistered();
+      error OperatorAndIndexDontMatch();
+      error OperatorIsNotRegistered();
 }

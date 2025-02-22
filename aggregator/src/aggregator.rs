@@ -45,6 +45,10 @@ impl OperatorState {
     }
 
     pub fn register_operator(&self, operator: Operator) -> Result<()> {
+
+
+        info!("register_operator calledc : {:?}", operator);
+
         let mut operators = self
             .operators
             .write()
@@ -73,6 +77,9 @@ pub async fn register_operator(
     State(operators): State<Arc<OperatorState>>,
     Json(operator): Json<Operator>,
 ) -> Result<Json<bool>, AppError> {
+
+    info!("register_operator {:?}", operators);
+
     operators.register_operator(operator)?;
     Ok(Json(true))
 }
@@ -81,7 +88,11 @@ pub async fn is_operator_registered(
     State(operators): State<Arc<OperatorState>>,
     Json(operator): Json<Operator>,
 ) -> Result<Json<bool>, AppError> {
+    info!("is_operator_registered  {:?}", operators);
+
     let registered = operators.is_operator_registered(operator)?;
+    info!("is_operator_registered_after  {:?}", registered);
+
     Ok(Json(registered))
 }
 

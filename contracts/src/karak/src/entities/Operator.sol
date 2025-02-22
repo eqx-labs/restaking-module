@@ -158,6 +158,7 @@ library Operator {
         if (operatorState.dssMap.length() == Constants.MAX_DSS_PER_OPERATOR) revert MaxDSSCapacityReached();
 
         operatorState.dssMap.add(address(dss));
+        //   info!("operatorState {:?}, {:?}",operator,registrationHookData);
 
         HookLib.callHookIfInterfaceImplemented({
             dss: dss,

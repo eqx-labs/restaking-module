@@ -24,7 +24,7 @@ contract DeployDSSAndLocal is Script {
     address internal constant CORE_VETO_COMMITTEE = 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266;
     address internal constant SLASHING_HANDLER_PROXY_ADMIN = 0x70997970C51812dc3A010C7d01b50e0d17dc79C8;
     address internal constant OPERATOR = 0x14dC79964da2C08b23698B3D3cc7Ca32193d9955;
-    address internal constant AGGREGATOR = 0x70997970C51812dc3A010C7d01b50e0d17dc79C8;
+    address internal constant AGGREGATOR = 0x49066ddbD166F4A46290076E196AD790A5c0a3F8;
 
     function run() public {
         vm.startBroadcast();
@@ -72,14 +72,14 @@ contract DeployDSSAndLocal is Script {
         console2.log("address of deployed operator contract for ", OPERATOR, " : ", operatorERC20Vault);
         console2.log();
 
-        SquareNumberDSS dss = deployDSS(address(coreProxy));
-        console2.log("address of DSS: ", address(dss));
+        // SquareNumberDSS dss = deployDSS(address(coreProxy));
+        // console2.log("address of DSS: ", address(dss));
 
         TxnVerifier dssv=deployDSSVerify(address(coreProxy));
         console2.log("address of TxnVerifier",address(dssv));
 
-        operatorRegistrationInCore(address(coreProxy), operatorERC20Vault, dss, testERC20);
-        updateStakeInDSS(coreProxy, operatorERC20Vault, dss);
+        operatorRegistrationInCore(address(coreProxy), operatorERC20Vault, dssv, testERC20);
+        updateStakeInDSS(coreProxy, operatorERC20Vault, dssv);
         vm.stopBroadcast();
 
         string memory blockNumberStore = string.concat(
@@ -141,10 +141,10 @@ contract DeployDSSAndLocal is Script {
         vaultAddress = address(Core(coreProxy).deployVaults(configs, vaultImpl)[0]);
     }
 
-    function deployDSS(address core) public returns (SquareNumberDSS dss) {
-        dss = new SquareNumberDSS(AGGREGATOR, ICore(core));
-        dss.registerToCore(1);
-    }
+    // function deployDSS(address core) public returns (SquareNumberDSS dss) {
+    //     dss = new SquareNumberDSS(AGGREGATOR, ICore(core));
+    //     dss.registerToCore(1);
+    // }
 
         function deployDSSVerify(address core) public returns (TxnVerifier dssv) {
         dssv = new TxnVerifier(AGGREGATOR, ICore(core));
@@ -155,7 +155,7 @@ contract DeployDSSAndLocal is Script {
     function operatorRegistrationInCore(
         address core,
         address vaultAddress,
-        SquareNumberDSS dss,
+        TxnVerifier dss,
         ERC20Mintable testERC20
     ) public {
         testERC20.approve(vaultAddress, 10000);
@@ -163,7 +163,7 @@ contract DeployDSSAndLocal is Script {
         Core(core).registerOperatorToDSS(IDSS(address(dss)), abi.encode(""));
     }
 
-    function updateStakeInDSS(Core core, address vaultAddress, SquareNumberDSS dss) public {
+    function updateStakeInDSS(Core core, address vaultAddress, TxnVerifier dss) public {
         core.requestUpdateVaultStakeInDSS(
             Operator.StakeUpdateRequest({vault: vaultAddress, dss: IDSS(address(dss)), toStake: true})
         );
